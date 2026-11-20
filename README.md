@@ -1,19 +1,19 @@
-# Template organization
+# Modèle d'app pour organisation
 
-A shared calendar whose data is stored in a collective Pod (a group on an ActivityPods Pod provider). The backend stores no business data, only its key and the URI of the collective Pod (in `data/`).
+Un calendrier partagé dont les données sont stockées dans un porte-données collectif (un groupe sur un Pod provider ActivityPods). Le backend ne stocke aucune donnée métier, seulement sa clé et l'URI du porte-données (dans `data/`).
 
-It requires features that are not published yet, so for now it must be tested against a local Pod provider.
+L'application dépend de fonctionnalités qui ne sont pas encore publiées : pour l'instant, il faut la tester avec un Pod provider local.
 
-## Requirements
+## Prérequis
 
-- Node 24 and Yarn 1
+- Node 24 et Yarn 1
 - Docker
 - [Yalc](https://github.com/wclr/yalc) (`npm install -g yalc`)
-- Local clones of [ActivityPods](https://github.com/activitypods/activitypods) (branch `role-sharing`) and [SemApps](https://github.com/assemblee-virtuelle/semapps) (branch `next`)
+- Des clones locaux d'[ActivityPods](https://github.com/activitypods/activitypods) (branche `next`) et de [SemApps](https://github.com/assemblee-virtuelle/semapps) (branche `next`)
 
-## Launch the Pod provider
+## Lancer le Pod provider
 
-### SemApps packages
+### Paquets SemApps
 
 ```bash
 cd /SEMAPPS_REPO
@@ -23,14 +23,14 @@ yarn install
 yarn run link-all
 cd ../frontend
 yarn install
-yarn run build # Also publish the packages to Yalc
+yarn run build # Publie aussi les paquets sur Yalc
 ```
 
 ### Backend
 
 ```bash
 cd /ACTIVITYPODS_REPO
-git checkout role-sharing
+git checkout next
 cd pod-provider
 make start # Fuseki, Redis, Mailcatcher...
 cd backend
@@ -38,19 +38,19 @@ yarn install
 yarn run link-semapps-packages
 ```
 
-Groups must be enabled. Create a `.env.local` file in the `backend` directory:
+Les groupes doivent être activés. Créer un fichier `.env.local` dans le répertoire `backend` :
 
 ```
 SEMAPPS_ENABLE_GROUPS=true
 ```
 
-Then:
+Puis :
 
 ```bash
 yarn run dev
 ```
 
-The backend is available on http://localhost:3000.
+Le backend est disponible sur http://localhost:3000.
 
 ### Frontend
 
@@ -61,11 +61,11 @@ yarn run link-semapps-packages
 yarn run dev
 ```
 
-The frontend is available on http://localhost:5000.
+Le frontend est disponible sur http://localhost:5000.
 
-### App framework packages
+### Paquets de l'app framework
 
-The `refine-*` packages used by this app must also be built from the `role-sharing` branch:
+Les paquets `refine-*` utilisés par l'application doivent aussi être construits depuis la branche `next` :
 
 ```bash
 cd /ACTIVITYPODS_REPO/app-framework
@@ -75,10 +75,10 @@ cd refine-hooks && yarn run build && cd ..
 cd refine-antd && yarn run build && cd ..
 ```
 
-## Launch the application
+## Lancer l'application
 
 ```bash
-cd /TEMPLATE_ORGANIZATION_REPO
+cd /MODELE_APP_ORGANISATION_REPO
 yarn install
 cd frontend
 yalc link @activitypods/refine-providers @activitypods/refine-hooks @activitypods/refine-antd
@@ -86,22 +86,22 @@ cd ..
 yarn run dev
 ```
 
-The default configuration (see `.env.example`) works with the local Pod provider. If needed, copy it to `.env`.
+La configuration par défaut (voir `.env.example`) fonctionne avec le Pod provider local. Si besoin, la copier dans `.env`.
 
-The application is available on http://localhost:4000. Always use this URL, not the Vite port: the backend serves the client ID (`/app.json`) and the API.
+L'application est disponible sur http://localhost:4000. Toujours utiliser cette URL, et non le port de Vite : c'est le backend qui sert le client ID (`/app.json`) et l'API.
 
-## Configure the application
+## Configurer l'application
 
-As long as it is not configured, the application only displays a "not configured" message. Go to http://localhost:4000/configure:
+Tant qu'elle n'est pas configurée, l'application affiche seulement un message « non configurée ». Aller sur http://localhost:4000/configure :
 
-1. **Pod provider**: keep `http://localhost:3000` and click "Se connecter", or "Créer un compte" if you don't have an account yet. Emails sent by the Pod provider can be read on http://localhost:1080.
-2. **Data space**: click "Créer le porte-données". You are redirected to the group creation page of the Pod provider, with the ID and name already filled. Create the group: you will be its owner.
-3. **Authorization**: back on the application, you are redirected to the authorization screen of the Pod provider, which asks to register the application on the group. Accept.
+1. **Hébergeur** : garder `http://localhost:3000` et cliquer sur « Se connecter », ou sur « Créer un compte » si vous n'avez pas encore de compte. Les e-mails envoyés par le Pod provider sont lisibles sur http://localhost:1080.
+2. **Porte-données** : cliquer sur « Créer le porte-données ». Vous êtes redirigé vers la page de création de groupe du Pod provider, avec l'identifiant et le nom déjà remplis. Créer le groupe : vous en serez le propriétaire.
+3. **Autorisation** : de retour sur l'application, vous êtes redirigé vers l'écran d'autorisation du Pod provider, qui propose d'enregistrer l'application sur le groupe. Accepter.
 
-The backend then checks that the WebID is a group and that the application is registered on it, and writes `data/config.json`. You are redirected to the home page, where you can create events in the shared calendar.
+Le backend vérifie alors que la WebID est bien un groupe et que l'application y est enregistrée, puis écrit `data/config.json`. Vous êtes redirigé vers l'accueil, où vous pouvez créer des événements dans le calendrier partagé.
 
-Once configured, `/configure` redirects to the home page. To start over, stop the application and delete `data/config.json` (and `data/pending-storage.json` if it exists).
+Une fois l'application configurée, `/configure` redirige vers l'accueil. Pour recommencer, arrêter l'application et supprimer `data/config.json` (ainsi que `data/pending-storage.json` s'il existe).
 
-### Members
+### Membres
 
-Other users must first be added to the group on the Pod provider. When they log in to the application, they are redirected to the authorization screen to register it on their own Pod.
+Les autres utilisateurs doivent d'abord être ajoutés au groupe sur le Pod provider. À leur connexion à l'application, ils sont redirigés vers l'écran d'autorisation pour l'enregistrer sur leur propre Pod.
