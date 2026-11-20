@@ -20,6 +20,18 @@ const messages: Record<string, any> = {
     logout: 'Se déconnecter',
     share: 'Partager'
   },
+  groups: {
+    join: 'Rejoindre',
+    acceptInvitation: "Accepter l'invitation",
+    requestToJoin: 'Demander à rejoindre',
+    sendRequest: 'Envoyer la demande',
+    requestMessage: 'Un message pour les administrateurs (facultatif)',
+    requestSent: 'Demande envoyée',
+    cancelRequest: "Annuler votre demande d'adhésion ?",
+    cancelRequestOk: 'Annuler la demande',
+    keepRequest: 'La garder',
+    joined: 'Vous êtes maintenant membre du groupe'
+  },
   actions: {
     list: 'Liste',
     create: 'Créer',

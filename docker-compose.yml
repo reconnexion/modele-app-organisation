@@ -1,0 +1,58 @@
+services:
+  fuseki:
+    image: semapps/jena-fuseki-webacl
+    # Without a limit, the JVM takes 65% of the host RAM
+    mem_limit: 2g
+    ports:
+      - "3030:3030"
+    volumes:
+      - fuseki-data:/fuseki
+    environment:
+      ADMIN_PASSWORD: admin
+      JVM_ARGS: -Xmx1g
+
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+
+  mailcatcher:
+    image: dockage/mailcatcher
+    ports:
+      - "1080:1080"
+      - "1025:1025"
+
+  pod-provider-backend:
+    image: activitypods/backend:next
+    depends_on:
+      - fuseki
+      - redis
+      - mailcatcher
+    # The Pod provider must reach the application on localhost:4000
+    network_mode: host
+    volumes:
+      - pod-provider-jwt:/app/backend/jwt
+      - pod-provider-uploads:/app/backend/uploads
+    environment:
+      SEMAPPS_ENABLE_GROUPS: "true"
+      SEMAPPS_JENA_PASSWORD: admin
+      SEMAPPS_DEFAULT_LOCALE: fr
+      SEMAPPS_SHAPE_REPOSITORY_URL: ${SHAPE_REPOSITORY_URL:-https://shapes.activitypods.org/}
+
+  pod-provider-frontend:
+    image: activitypods/frontend:next
+    depends_on:
+      - pod-provider-backend
+    ports:
+      - "5000:5000"
+    environment:
+      VITE_CONFIG_URL: http://localhost:3000/.well-known/config.js
+
+volumes:
+  fuseki-data:
+  redis-data:
+  pod-provider-jwt:
+  pod-provider-uploads:

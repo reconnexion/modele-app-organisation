@@ -9,11 +9,38 @@ L'application dépend de fonctionnalités qui ne sont pas encore publiées : pou
 - Node 24 et Yarn 1
 - Docker
 - [Yalc](https://github.com/wclr/yalc) (`npm install -g yalc`)
-- Des clones locaux d'[ActivityPods](https://github.com/activitypods/activitypods) (branche `next`) et de [SemApps](https://github.com/assemblee-virtuelle/semapps) (branche `next`)
+- Un clone local d'[ActivityPods](https://github.com/activitypods/activitypods) (branche `next`), pour les paquets `refine-*`
 
 ## Lancer le Pod provider
 
-### Paquets SemApps
+### Avec Docker
+
+Le fichier `docker-compose.yml` lance le Pod provider à partir des images `activitypods/backend:next` et `activitypods/frontend:next` (branche `next` d'ActivityPods, groupes activés), avec Fuseki, Redis et Mailcatcher :
+
+```bash
+cd /MODELE_APP_ORGANISATION_REPO
+docker compose up -d
+```
+
+Le backend est disponible sur http://localhost:3000 et le frontend sur http://localhost:5000. Le backend utilise le réseau de l'hôte, pour joindre l'application sur `localhost:4000` (Linux uniquement).
+
+Pour passer à la dernière version des images :
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+### Depuis les sources
+
+Pour modifier le Pod provider ou SemApps. Il faut alors aussi un clone local de [SemApps](https://github.com/assemblee-virtuelle/semapps) (branche `next`), en plus de celui d'ActivityPods :
+
+```bash
+git clone -b next https://github.com/assemblee-virtuelle/semapps.git
+git clone -b next https://github.com/activitypods/activitypods.git
+```
+
+#### Paquets SemApps
 
 ```bash
 cd /SEMAPPS_REPO
@@ -26,7 +53,7 @@ yarn install
 yarn run build # Publie aussi les paquets sur Yalc
 ```
 
-### Backend
+#### Backend
 
 ```bash
 cd /ACTIVITYPODS_REPO
@@ -52,7 +79,7 @@ yarn run dev
 
 Le backend est disponible sur http://localhost:3000.
 
-### Frontend
+#### Frontend
 
 ```bash
 cd /ACTIVITYPODS_REPO/pod-provider/frontend
@@ -63,9 +90,15 @@ yarn run dev
 
 Le frontend est disponible sur http://localhost:5000.
 
-### Paquets de l'app framework
+## Paquets de l'app framework
 
-Les paquets `refine-*` utilisés par l'application doivent aussi être construits depuis la branche `next` :
+Les paquets `refine-*` utilisés par l'application doivent aussi être construits depuis la branche `next` d'ActivityPods. Si ce n'est pas déjà fait, cloner le dépôt :
+
+```bash
+git clone -b next https://github.com/activitypods/activitypods.git
+```
+
+Puis :
 
 ```bash
 cd /ACTIVITYPODS_REPO/app-framework

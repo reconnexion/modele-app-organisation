@@ -23,8 +23,8 @@ import EventCreate from './resources/events/EventCreate';
 import EventEdit from './resources/events/EventEdit';
 import EventShow from './resources/events/EventShow';
 
-const PublicLayout = () => (
-  <Layout>
+const PublicLayout = ({ storageWebId }: { storageWebId?: string }) => (
+  <Layout groupWebId={storageWebId}>
     <Outlet />
   </Layout>
 );
@@ -52,7 +52,7 @@ const AppRoutes = ({ status }: { status: AppStatus }) => (
     {status.configured ? (
       <>
         {/* The events shared with everyone can be seen without being logged in */}
-        <Route element={<PublicLayout />}>
+        <Route element={<PublicLayout storageWebId={status.storageWebId} />}>
           <Route index element={<NavigateToResource resource="events" />} />
           <Route path="/events">
             <Route index element={<EventCalendar storageWebId={status.storageWebId} />} />

@@ -1,15 +1,29 @@
 import type { ReactNode } from 'react';
 import { useGetIdentity, useLogout } from '@refinedev/core';
 import type { Identity } from '@activitypods/refine-providers';
-import { useAccessControlRefresh } from '@activitypods/refine-hooks';
-import { Avatar, Button, Dropdown, Layout as AntdLayout, Typography, theme } from 'antd';
-import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
+import { useAccessControlRefresh, useGroupMembership } from '@activitypods/refine-hooks';
+import { JoinGroupButton } from '@activitypods/refine-antd';
+import { App, Avatar, Button, Dropdown, Layout as AntdLayout, Space, Typography, theme } from 'antd';
+import { LogoutOutlined, UserDeleteOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router';
 
 export const APP_NAME = 'Calendrier partagé';
 
-const UserMenu = ({ identity }: { identity?: Identity }) => {
+const UserMenu = ({ identity, groupWebId }: { identity?: Identity; groupWebId?: string }) => {
   const { mutate: logout } = useLogout();
+  const { modal } = App.useApp();
+  const { status, leave } = useGroupMembership(groupWebId);
+
+  const confirmLeave = () =>
+    modal.confirm({
+      title: 'Quitter le groupe ?',
+      content: "Vous n'aurez plus accès aux données réservées à ses membres.",
+      okText: 'Quitter',
+      okButtonProps: { danger: true },
+      cancelText: 'Annuler',
+      onOk: () => leave()
+    });
+
   return (
     <Dropdown
       trigger={['click']}
@@ -17,6 +31,9 @@ const UserMenu = ({ identity }: { identity?: Identity }) => {
         items: [
           { key: 'name', label: identity?.name, disabled: true },
           { type: 'divider' },
+          ...(status === 'member'
+            ? [{ key: 'leave', label: 'Quitter le groupe', icon: <UserDeleteOutlined />, onClick: confirmLeave }]
+            : []),
           { key: 'logout', label: 'Se déconnecter', icon: <LogoutOutlined />, onClick: () => logout() }
         ]
       }}
@@ -30,7 +47,7 @@ const UserMenu = ({ identity }: { identity?: Identity }) => {
   );
 };
 
-const Layout = ({ children }: { children: ReactNode }) => {
+const Layout = ({ children, groupWebId }: { children: ReactNode; groupWebId?: string }) => {
   const { token } = theme.useToken();
   const { data: identity } = useGetIdentity<Identity>();
   const navigate = useNavigate();
@@ -57,7 +74,10 @@ const Layout = ({ children }: { children: ReactNode }) => {
           {APP_NAME}
         </Typography.Text>
         {identity ? (
-          <UserMenu identity={identity} />
+          <Space size={12}>
+            {groupWebId && <JoinGroupButton groupWebId={groupWebId} ghost />}
+            <UserMenu identity={identity} groupWebId={groupWebId} />
+          </Space>
         ) : (
           <Button ghost onClick={() => navigate('/login')}>
             Se connecter
