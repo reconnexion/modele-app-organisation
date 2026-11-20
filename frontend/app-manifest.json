@@ -1,0 +1,31 @@
+{
+  "$schema": "./node_modules/@activitypods/app-manifest/schema.json",
+  "name": "Calendrier partagé",
+  "description": {
+    "en": "A shared calendar stored in a collective Pod",
+    "fr": "Un calendrier partagé stocké dans un porte-données collectif"
+  },
+  "supportedLocales": ["en", "fr"],
+  "accessNeeds": {
+    "@user": {
+      "required": [
+        {
+          "shapeTreeUri": "https://shapes.activitypods.org/shapetrees/as/Profile",
+          "accessMode": ["acl:Read"]
+        },
+        "apods:PostOutbox"
+      ]
+    },
+    "calendar": {
+      "required": [
+        {
+          "shapeTreeUri": "https://shapes.activitypods.org/shapetrees/as/Event",
+          "accessMode": ["acl:Read", "acl:Write"]
+        },
+        "apods:ReadInbox",
+        "apods:ReadOutbox",
+        "apods:PostOutbox"
+      ]
+    }
+  }
+}

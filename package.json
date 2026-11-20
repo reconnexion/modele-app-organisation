@@ -1,0 +1,23 @@
+{
+  "name": "template-organization",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n backend,frontend \"yarn workspace backend dev\" \"yarn workspace frontend dev\"",
+    "build": "yarn workspace frontend build",
+    "start": "yarn workspace backend start"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "concurrently": "^9.1.2",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.3"
+  },
+  "resolutions": {
+    "@types/node": "^24.0.0"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}

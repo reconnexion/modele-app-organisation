@@ -1,0 +1,24 @@
+{
+  "name": "backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "NODE_ENV=production node src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@activitypods/app-manifest": "^2.3.2",
+    "express": "^5.1.0",
+    "http-proxy-middleware": "^3.0.5",
+    "moleculer": "^0.14.35",
+    "moleculer-web": "^0.10.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
