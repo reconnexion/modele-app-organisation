@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { resolveAuthAgent, type AuthSession } from '@activitypods/refine-providers';
 import { clientId } from 'virtual:app-manifest';
-import { Alert, Button, Card, Form, Input, Space, Spin, Steps, Typography } from 'antd';
+import { Alert, Avatar, Button, Card, Form, Input, Space, Spin, Steps, Typography } from 'antd';
 import { authProvider, DEFAULT_POD_PROVIDER } from '../providers';
 import manifest from '../../app-manifest.json';
 
@@ -14,6 +14,7 @@ const DEFAULT_DESCRIPTION = manifest.description.fr;
 interface AppInfo {
   name?: string;
   description?: string;
+  thumbnail?: string;
 }
 
 const getAuthorizeEndpoint = async (session: AuthSession): Promise<string> => {
@@ -207,6 +208,16 @@ export const ConfigurePage = () => {
             </Form.Item>
             <Form.Item name="description" label="Description">
               <Input.TextArea autoSize={{ minRows: 2 }} />
+            </Form.Item>
+            <Form.Item
+              label="Icône"
+              extra="Celle du porte-données, modifiable dans son profil public chez l'hébergeur."
+            >
+              {appInfo.thumbnail ? (
+                <Avatar shape="square" size={64} src={appInfo.thumbnail} />
+              ) : (
+                <Typography.Text type="secondary">Aucune</Typography.Text>
+              )}
             </Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">

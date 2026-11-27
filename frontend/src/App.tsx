@@ -3,7 +3,7 @@ import { useNotificationProvider, ErrorComponent, RefineThemes } from '@refinede
 import routerProvider, { CatchAllNavigate, DocumentTitleHandler, NavigateToResource } from '@refinedev/react-router';
 import { LoginPage } from '@activitypods/refine-antd';
 import { BrowserRouter, Routes, Route, Outlet, Navigate, useLocation } from 'react-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { App as AntdApp, ConfigProvider, Result, Spin } from 'antd';
 import frFR from 'antd/locale/fr_FR';
 import { CalendarOutlined } from '@ant-design/icons';
@@ -27,7 +27,7 @@ import manifest from '../app-manifest.json';
 const getAppName = (status: AppStatus) => status.name ?? manifest.name;
 
 const PublicLayout = ({ status }: { status: AppStatus }) => (
-  <Layout groupWebId={status.storageWebId} appName={getAppName(status)}>
+  <Layout groupWebId={status.storageWebId} appName={getAppName(status)} appIcon={status.thumbnail}>
     <Outlet />
   </Layout>
 );
@@ -81,6 +81,14 @@ const AppRoutes = ({ status }: { status: AppStatus }) => (
 const App = () => {
   const { status, error } = useAppStatus();
   const providers = useMemo(() => status && createProviders(status.storageWebId), [status]);
+
+  useEffect(() => {
+    if (!status?.thumbnail) return;
+    const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]') ?? document.createElement('link');
+    link.rel = 'icon';
+    link.href = status.thumbnail;
+    document.head.appendChild(link);
+  }, [status?.thumbnail]);
 
   return (
     <BrowserRouter>

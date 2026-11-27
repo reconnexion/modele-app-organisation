@@ -5,10 +5,11 @@ import path from 'node:path';
 import { Errors, type ServiceSchema } from 'moleculer';
 import { signedFetch } from '../signature.ts';
 
-// Name and description of the app, which override those of the manifest
+// Name, description and icon of the app, which override those of the manifest
 export interface AppInfo {
   name?: string;
   description?: string;
+  thumbnail?: string;
 }
 
 export interface AgentConfig extends AppInfo {
@@ -28,6 +29,12 @@ const GROUP_TYPES = ['foaf:Group', 'foaf:Organization', 'Group', 'Organization']
 
 const getName = (actor: any): string | undefined =>
   [actor['foaf:name'], actor.name, actor['as:name'], actor.preferredUsername].flat().find(n => typeof n === 'string');
+
+const getIcon = (actor: any): string | undefined =>
+  [actor.icon, actor['as:icon'], actor.image, actor['as:image']]
+    .flat()
+    .map(image => (typeof image === 'string' ? image : (image?.url ?? image?.['as:url'])))
+    .find(url => typeof url === 'string' && URL.canParse(url));
 
 const cleanText = (value: unknown) => (typeof value === 'string' && value.trim()) || undefined;
 
@@ -76,12 +83,13 @@ const AgentService: ServiceSchema = {
         configured: !!this.config,
         storageWebId: this.config?.storageWebId,
         name: this.config?.name,
-        description: this.config?.description
+        description: this.config?.description,
+        thumbnail: this.config?.thumbnail
       };
     },
     getAppInfo(): AppInfo {
-      const { name, description } = this.config ?? this.pending ?? {};
-      return { name, description };
+      const { name, description, thumbnail } = this.config ?? this.pending ?? {};
+      return { name, description, thumbnail };
     },
     getPublicKey() {
       return this.publicKey;
@@ -128,7 +136,8 @@ const AgentService: ServiceSchema = {
         storageUri: storage['pim:storage'],
         name: cleanText(ctx.params.name) ?? previous.name ?? getName(storage),
         // A null description restores the one of the manifest
-        description: 'description' in ctx.params ? cleanText(ctx.params.description) : previous.description
+        description: 'description' in ctx.params ? cleanText(ctx.params.description) : previous.description,
+        thumbnail: getIcon(storage)
       };
       await writeFile(this.pendingPath, JSON.stringify(this.pending, null, 2));
       return this.actions.getAppInfo();
@@ -156,7 +165,8 @@ const AgentService: ServiceSchema = {
         storageUri: storage['pim:storage'],
         ...(this.pending?.storageWebId === storageWebId && {
           name: this.pending.name,
-          description: this.pending.description
+          description: this.pending.description,
+          thumbnail: this.pending.thumbnail
         }),
         configuredAt: new Date().toISOString()
       };

@@ -3,7 +3,7 @@ import { useGetIdentity, useLogout } from '@refinedev/core';
 import type { Identity } from '@activitypods/refine-providers';
 import { useAccessControlRefresh, useGroupMembership } from '@activitypods/refine-hooks';
 import { JoinGroupButton } from '@activitypods/refine-antd';
-import { App, Avatar, Button, Dropdown, Layout as AntdLayout, Space, Typography, theme } from 'antd';
+import { App, Avatar, Button, Dropdown, Layout as AntdLayout, Space, Typography } from 'antd';
 import { LogoutOutlined, UserDeleteOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router';
 
@@ -39,14 +39,23 @@ const UserMenu = ({ identity, groupWebId }: { identity?: Identity; groupWebId?: 
       <Avatar
         src={identity?.avatar}
         icon={!identity?.avatar && <UserOutlined />}
-        style={{ cursor: 'pointer', border: '1px solid rgba(255,255,255,0.5)' }}
+        style={{ cursor: 'pointer', border: '1px solid rgba(0,0,0,0.15)' }}
       />
     </Dropdown>
   );
 };
 
-const Layout = ({ children, groupWebId, appName }: { children: ReactNode; groupWebId?: string; appName: string }) => {
-  const { token } = theme.useToken();
+const Layout = ({
+  children,
+  groupWebId,
+  appName,
+  appIcon
+}: {
+  children: ReactNode;
+  groupWebId?: string;
+  appName: string;
+  appIcon?: string;
+}) => {
   const { data: identity } = useGetIdentity<Identity>();
   const navigate = useNavigate();
   useAccessControlRefresh();
@@ -60,26 +69,26 @@ const Layout = ({ children, groupWebId, appName }: { children: ReactNode; groupW
           justifyContent: 'space-between',
           gap: 12,
           padding: '0 16px',
-          background: token.colorPrimary
+          background: '#ebebeb',
+          borderBottom: '1px solid #d9d9d9'
         }}
       >
-        <Typography.Text
-          strong
-          ellipsis
-          style={{ color: '#fff', fontSize: 20, cursor: 'pointer' }}
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, lineHeight: 1, cursor: 'pointer' }}
           onClick={() => navigate('/')}
         >
-          {appName}
-        </Typography.Text>
+          {appIcon && <Avatar shape="square" src={appIcon} style={{ flexShrink: 0 }} />}
+          <Typography.Text strong ellipsis style={{ fontSize: 20, lineHeight: 1.4 }}>
+            {appName}
+          </Typography.Text>
+        </div>
         {identity ? (
           <Space size={12}>
-            {groupWebId && <JoinGroupButton groupWebId={groupWebId} ghost />}
+            {groupWebId && <JoinGroupButton groupWebId={groupWebId} />}
             <UserMenu identity={identity} groupWebId={groupWebId} />
           </Space>
         ) : (
-          <Button ghost onClick={() => navigate('/login')}>
-            Se connecter
-          </Button>
+          <Button onClick={() => navigate('/login')}>Se connecter</Button>
         )}
       </AntdLayout.Header>
       <AntdLayout.Content style={{ padding: 24, maxWidth: 1200, width: '100%', margin: '0 auto' }}>

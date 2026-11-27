@@ -23,9 +23,9 @@ const ClientDocumentsService: ServiceSchema = {
 
       // Read on every call, so that changes to the manifest are taken into account without restarting
       const manifest = await readManifest(manifestPath);
-      const { name, description }: AppInfo = await ctx.call('agent.getAppInfo');
+      const { name, description, thumbnail }: AppInfo = await ctx.call('agent.getAppInfo');
       const documents: Record<string, any> = generateDocuments(
-        { ...manifest, ...(name && { name }), ...(description && { description }) },
+        { ...manifest, ...(name && { name }), ...(description && { description }), ...(thumbnail && { thumbnail }) },
         publicUrl,
         { storages: await ctx.call('agent.getStorages') }
       );

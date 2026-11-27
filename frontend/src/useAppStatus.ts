@@ -5,6 +5,7 @@ export interface AppStatus {
   storageWebId?: string;
   name?: string;
   description?: string;
+  thumbnail?: string;
 }
 
 const useAppStatus = () => {
