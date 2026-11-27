@@ -14,9 +14,10 @@ const getAuthorizeEndpoint = async (session: AuthSession): Promise<string> => {
   return authAgent['interop:hasAuthorizationRedirectEndpoint'];
 };
 
-const goToGroupCreation = async (session: AuthSession) => {
-  // The group creation page is on the same frontend as the authorization page
-  const url = new URL('/groups/create', await getAuthorizeEndpoint(session));
+const goToGroupSelection = async (session: AuthSession) => {
+  // The group selection page is on the same frontend as the authorization page
+  // It goes directly to the group creation if the user manages no group
+  const url = new URL('/groups/select', await getAuthorizeEndpoint(session));
   url.searchParams.set('redirect', `${window.location.origin}/configure`);
   url.searchParams.set('id', manifest.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
   url.searchParams.set('name', manifest.name);
@@ -63,7 +64,7 @@ export const ConfigurePage = () => {
     const group = searchParams.get('group');
 
     if (group) {
-      // Back from the group creation page
+      // Back from the group selection or creation page
       handled.current = true;
       localStorage.setItem(PENDING_STORAGE_KEY, group);
       run(() => goToAuthorization(session, group));
@@ -141,12 +142,13 @@ export const ConfigurePage = () => {
         ) : current === 1 ? (
           <Space direction="vertical" style={{ width: '100%' }}>
             <Typography.Paragraph>
-              Connecté en tant que <Typography.Text code>{session!.webId}</Typography.Text>. Vous allez maintenant créer
-              le porte-données de l'application chez votre hébergeur. Vous en serez le propriétaire.
+              Connecté en tant que <Typography.Text code>{session!.webId}</Typography.Text>. Choisissez maintenant le
+              porte-données de l'application chez votre hébergeur : un porte-données collectif que vous gérez déjà, ou
+              un nouveau, dont vous serez le propriétaire.
             </Typography.Paragraph>
             <Space>
-              <Button type="primary" onClick={() => run(() => goToGroupCreation(session!))}>
-                Créer le porte-données
+              <Button type="primary" onClick={() => run(() => goToGroupSelection(session!))}>
+                Choisir le porte-données
               </Button>
               <Button onClick={() => authProvider.logout({}).then(() => window.location.reload())}>
                 Changer de compte
