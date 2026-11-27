@@ -1,13 +1,13 @@
-import { Show } from '@refinedev/antd';
+import { ShowSide } from '../../layout/SidePanels';
 import { useShow } from '@refinedev/core';
 import EventDetails from './EventDetails';
 
 const EventShow = () => {
   const { result: record, query } = useShow();
   return (
-    <Show isLoading={query.isLoading} title={record?.name} canEdit canDelete>
+    <ShowSide isLoading={query.isLoading} title={record?.name}>
       <EventDetails record={record} />
-    </Show>
+    </ShowSide>
   );
 };
 

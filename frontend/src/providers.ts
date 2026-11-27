@@ -16,21 +16,45 @@ export const authProvider = apAuthProvider({
   appStatusCheckInterval: false
 });
 
-export const EVENT_SHAPE_TREE = 'https://shapes.activitypods.org/shapetrees/as/Event';
+const SHAPE_TREES = 'https://shapes.activitypods.org/shapetrees/';
+
+// Created and listed in the storage of the organization
+const organizationResource = (shapeTree: string) => ({
+  shapeTreeUri: `${SHAPE_TREES}${shapeTree}`,
+  list: { storages: 'organization' },
+  create: { storage: 'organization' }
+});
 
 const resources: ResourcesConfig = {
-  events: {
-    shapeTreeUri: EVENT_SHAPE_TREE,
-    list: { storages: 'calendar' },
-    create: { storage: 'calendar' }
-  }
+  circles: organizationResource('hc/Circle'),
+  events: organizationResource('as/Event'),
+  tasks: organizationResource('pair/Task'),
+  'task-statuses': organizationResource('pair/TaskStatus'),
+  documents: organizationResource('pair/Document')
 };
 
-// The calendar is in the storage chosen when the app was configured
+const jsonContext = [
+  'https://www.w3.org/ns/activitystreams',
+  {
+    pair: 'http://virtual-assembly.org/ontologies/pair#',
+    hc: 'https://reconnexion.coop/ns/holacracy#',
+    'pair:partOf': { '@type': '@id' },
+    'pair:documents': { '@type': '@id' },
+    'pair:concerns': { '@type': '@id' },
+    'pair:hasStatus': { '@type': '@id' },
+    'pair:assignedTo': { '@type': '@id' },
+    'pair:affiliates': { '@type': '@id' },
+    'pair:homePage': { '@type': '@id' },
+    'hc:leadBy': { '@type': '@id' }
+  }
+];
+
+// The data of the organization is in the storage chosen when the app was configured
 export const createProviders = (storageWebId?: string) => {
   const config: DataProviderConfig = {
     authProvider,
-    storages: storageWebId ? { calendar: { uri: storageWebId } } : {},
+    jsonContext,
+    storages: storageWebId ? { organization: { uri: storageWebId } } : {},
     resources: storageWebId ? resources : {}
   };
   return {

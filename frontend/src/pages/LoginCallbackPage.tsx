@@ -1,27 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Result, Spin } from 'antd';
-import { resolveAuthAgent, STORAGE_KEY_REDIRECT } from '@activitypods/refine-providers';
-import { clientId } from 'virtual:app-manifest';
+import { STORAGE_KEY_REDIRECT } from '@activitypods/refine-providers';
 import { authProvider } from '../providers';
-
-// The access needs targeting the storage of the app are given to its members without asking them
-const ensureRegistration = async () => {
-  const { webId, token } = authProvider.getSession()!;
-  const res = await fetch(new URL('/.well-known/app-status', new URL(webId).origin), {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
-  });
-  if (!res.ok) throw new Error(`Impossible d'obtenir le statut de l'application (${res.status})`);
-  const { installed, upgradeNeeded } = await res.json();
-  if (installed && !upgradeNeeded) return true;
-
-  // Without token, as the app is not registered yet
-  const { authAgent } = await resolveAuthAgent(webId);
-  const url = new URL(authAgent['interop:hasAuthorizationRedirectEndpoint']);
-  url.searchParams.set('client_id', clientId);
-  window.location.href = url.toString();
-  return false;
-};
+import { ensureRegistration } from '../registration';
 
 export const LoginCallbackPage = ({ configured, storageWebId }: { configured: boolean; storageWebId?: string }) => {
   const navigate = useNavigate();

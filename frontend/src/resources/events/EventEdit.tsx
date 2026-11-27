@@ -1,12 +1,13 @@
-import { Edit, useForm } from '@refinedev/antd';
+import { useForm } from '@refinedev/antd';
+import { EditSide } from '../../layout/SidePanels';
 import EventForm from './EventForm';
 
 const EventEdit = () => {
   const { formProps, saveButtonProps, query } = useForm({ redirect: 'show' });
   return (
-    <Edit title="Modifier l'événement" saveButtonProps={saveButtonProps} isLoading={query?.isLoading}>
+    <EditSide title="Modifier l'événement" saveButtonProps={saveButtonProps} isLoading={query?.isLoading}>
       <EventForm {...formProps} />
-    </Edit>
+    </EditSide>
   );
 };
 

@@ -1,24 +1,31 @@
 import { useMemo, useState } from 'react';
-import { CreateButton, List } from '@refinedev/antd';
-import { useCan, useGo, useList } from '@refinedev/core';
-import { Badge, Calendar, Spin } from 'antd';
+import { useCan, useGo, useList, useNavigation, useResourceParams } from '@refinedev/core';
+import { Badge, Calendar, Select, Spin } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
-import EventModal from './EventModal';
-import { ShareButton } from '@activitypods/refine-antd';
-import { clientId } from 'virtual:app-manifest';
-import { EVENT_SHAPE_TREE } from '../../providers';
+import { circleOptions, getDescendants, useCircles } from '../circles/common';
+import type { Event } from './types';
 
-type Event = { id: string; name?: string; startTime?: string; endTime?: string };
-
-const EventCalendar = ({ storageWebId }: { storageWebId?: string }) => {
+const EventCalendar = () => {
   const go = useGo();
+  // Unlike go(), it encodes the URI of the event
+  const { show } = useNavigation();
   const { data: canCreate } = useCan({ resource: 'events', action: 'create' });
-  const [openEventId, setOpenEventId] = useState<string>();
+  const { id: openEventId } = useResourceParams();
   const { result, query } = useList<Event>({ resource: 'events', pagination: { mode: 'off' } });
+  const { circles } = useCircles();
+  // Kept while records are opened in the panel, as the calendar is not rendered again
+  const [circleId, setCircleId] = useState<string>();
+
+  // TODO filter on the server, once LDP containers can do it
+  const events = useMemo(() => {
+    if (!circleId) return result.data ?? [];
+    const circleIds = getDescendants(circles, circleId);
+    return (result.data ?? []).filter(event => event['pair:concerns'] && circleIds.has(event['pair:concerns']));
+  }, [result.data, circles, circleId]);
 
   const eventsByDay = useMemo(() => {
     const days = new Map<string, Event[]>();
-    for (const event of result.data ?? []) {
+    for (const event of events) {
       if (!event.startTime) continue;
       const end = dayjs(event.endTime ?? event.startTime);
       for (let day = dayjs(event.startTime).startOf('day'); !day.isAfter(end, 'day'); day = day.add(1, 'day')) {
@@ -28,7 +35,7 @@ const EventCalendar = ({ storageWebId }: { storageWebId?: string }) => {
     }
     for (const events of days.values()) events.sort((a, b) => a.startTime!.localeCompare(b.startTime!));
     return days;
-  }, [result.data]);
+  }, [events]);
 
   const dateCellRender = (date: Dayjs) => (
     <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -37,9 +44,14 @@ const EventCalendar = ({ storageWebId }: { storageWebId?: string }) => {
           key={event.id}
           onClick={e => {
             e.stopPropagation();
-            setOpenEventId(event.id);
+            show('events', event.id);
           }}
-          style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+          style={{
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+            fontWeight: event.id === openEventId ? 'bold' : undefined
+          }}
         >
           <Badge status="processing" text={`${dayjs(event.startTime).format('HH:mm')} ${event.name ?? ''}`} />
         </li>
@@ -48,32 +60,32 @@ const EventCalendar = ({ storageWebId }: { storageWebId?: string }) => {
   );
 
   return (
-    <List
-      title="Calendrier"
-      headerButtons={
-        <>
-          <ShareButton clientId={clientId} resource="events" shapeTreeUri={EVENT_SHAPE_TREE} podOwner={storageWebId}>
-            Permissions
-          </ShareButton>
-          <CreateButton>Nouvel événement</CreateButton>
-        </>
-      }
-    >
-      <Spin spinning={query.isLoading}>
-        <Calendar
-          cellRender={(date, info) => (info.type === 'date' ? dateCellRender(date) : info.originNode)}
-          onSelect={(date, { source }) => {
-            if (source === 'date' && canCreate?.can) {
-              go({
-                to: { resource: 'events', action: 'create' },
-                query: { startTime: date.hour(18).minute(0).second(0).millisecond(0).toISOString() }
-              });
-            }
-          }}
-        />
-      </Spin>
-      <EventModal id={openEventId} onClose={() => setOpenEventId(undefined)} />
-    </List>
+    <Spin spinning={query.isLoading}>
+      <Select
+        allowClear
+        showSearch
+        optionFilterProp="label"
+        options={circleOptions(circles)}
+        value={circleId}
+        onChange={setCircleId}
+        placeholder="Tous les cercles"
+        style={{ width: 240 }}
+      />
+      <Calendar
+        cellRender={(date, info) => (info.type === 'date' ? dateCellRender(date) : info.originNode)}
+        onSelect={(date, { source }) => {
+          if (source === 'date' && canCreate?.can) {
+            go({
+              to: { resource: 'events', action: 'create' },
+              query: {
+                startTime: date.hour(18).minute(0).second(0).millisecond(0).toISOString(),
+                concerns: circleId
+              }
+            });
+          }
+        }}
+      />
+    </Spin>
   );
 };
 

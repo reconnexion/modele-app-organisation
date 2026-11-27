@@ -12,9 +12,9 @@ const ApiService: ServiceSchema = {
         mappingPolicy: 'restrict',
         bodyParsers: { json: true },
         aliases: {
-          'GET /status': 'agent.status',
-          'POST /configure': 'agent.configure',
-          'POST /configure/storage': 'agent.prepare'
+          'GET /status': 'configuration.status',
+          'POST /configure': 'configuration.configure',
+          'POST /configure/storage': 'configuration.prepare'
         }
       }
     ]

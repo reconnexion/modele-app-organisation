@@ -1,6 +1,6 @@
 import { CLIENT_DOCUMENT, generateDocuments, readManifest } from '@activitypods/app-manifest';
 import type { ServiceSchema } from 'moleculer';
-import type { AppInfo } from './agent.ts';
+import type { AppInfo } from './configuration.ts';
 
 const SECURITY_CONTEXT = {
   sec: 'https://w3id.org/security#',
@@ -15,7 +15,7 @@ const ClientDocumentsService: ServiceSchema = {
     manifestPath: null,
     publicUrl: null
   },
-  dependencies: ['agent'],
+  dependencies: ['agent', 'configuration'],
   actions: {
     async get(ctx) {
       const { path } = ctx.params;
@@ -23,11 +23,11 @@ const ClientDocumentsService: ServiceSchema = {
 
       // Read on every call, so that changes to the manifest are taken into account without restarting
       const manifest = await readManifest(manifestPath);
-      const { name, description, thumbnail }: AppInfo = await ctx.call('agent.getAppInfo');
+      const { name, description, thumbnail }: AppInfo = await ctx.call('configuration.getAppInfo');
       const documents: Record<string, any> = generateDocuments(
         { ...manifest, ...(name && { name }), ...(description && { description }), ...(thumbnail && { thumbnail }) },
         publicUrl,
-        { storages: await ctx.call('agent.getStorages') }
+        { storages: await ctx.call('configuration.getStorages') }
       );
       const document = documents[path];
       if (!document || path !== CLIENT_DOCUMENT) return document ?? null;

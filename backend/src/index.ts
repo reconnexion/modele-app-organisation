@@ -5,8 +5,10 @@ import { ServiceBroker } from 'moleculer';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { CLIENT_DOCUMENT } from '@activitypods/app-manifest';
 import AgentService from './services/agent.ts';
+import ConfigurationService from './services/configuration.ts';
 import ClientDocumentsService from './services/client-documents.ts';
 import ApiService from './services/api.ts';
+import TaskStatusesService from './services/task-statuses.ts';
 
 const root = path.resolve(import.meta.dirname, '../..');
 if (existsSync(path.join(root, '.env'))) process.loadEnvFile(path.join(root, '.env'));
@@ -19,19 +21,24 @@ const broker = new ServiceBroker({
   logger: { type: 'Console', options: { formatter: 'short' } }
 });
 
+const dataDir = process.env.DATA_DIR || path.join(root, 'data');
+
 broker.createService({
   name: 'agent',
   mixins: [AgentService],
-  settings: {
-    dataDir: process.env.DATA_DIR || path.join(root, 'data'),
-    clientId: new URL(CLIENT_DOCUMENT, publicUrl).href
-  }
+  settings: { dataDir, clientId: new URL(CLIENT_DOCUMENT, publicUrl).href }
+});
+broker.createService({
+  name: 'configuration',
+  mixins: [ConfigurationService],
+  settings: { dataDir }
 });
 broker.createService({
   name: 'client-documents',
   mixins: [ClientDocumentsService],
   settings: { manifestPath: path.join(root, 'frontend', 'app-manifest.json'), publicUrl }
 });
+broker.createService(TaskStatusesService);
 const api = broker.createService(ApiService);
 
 await broker.start();

@@ -1,18 +1,21 @@
 import { Refine, Authenticated } from '@refinedev/core';
-import { useNotificationProvider, ErrorComponent, RefineThemes } from '@refinedev/antd';
+import { useNotificationProvider, ErrorComponent } from '@refinedev/antd';
 import routerProvider, { CatchAllNavigate, DocumentTitleHandler, NavigateToResource } from '@refinedev/react-router';
 import { LoginPage } from '@activitypods/refine-antd';
+import type { ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Outlet, Navigate, useLocation } from 'react-router';
 import { useEffect, useMemo } from 'react';
 import { App as AntdApp, ConfigProvider, Result, Spin } from 'antd';
 import frFR from 'antd/locale/fr_FR';
-import { CalendarOutlined } from '@ant-design/icons';
+import Icon, { CalendarOutlined, CheckSquareOutlined, FileTextOutlined } from '@ant-design/icons';
 
 import '@ant-design/v5-patch-for-react-19';
 import '@refinedev/antd/dist/reset.css';
 
 import { authProvider, createProviders, DEFAULT_POD_PROVIDER } from './providers';
-import Layout from './Layout';
+import Layout, { PRIMARY_COLOR } from './layout/Layout';
+import SplitView from './layout/SplitView';
+import SimpleList from './common/SimpleList';
 import { i18nProvider } from './i18n';
 import useAppStatus, { AppStatus } from './useAppStatus';
 import { ConfigurePage } from './pages/ConfigurePage';
@@ -22,7 +25,19 @@ import EventCalendar from './resources/events/EventCalendar';
 import EventCreate from './resources/events/EventCreate';
 import EventEdit from './resources/events/EventEdit';
 import EventShow from './resources/events/EventShow';
+import { CircleCreate, CircleEdit, CircleList, CircleShow } from './resources/circles';
+import { DescribedCreate, DescribedEdit, DescribedShow } from './resources/described';
 import manifest from '../app-manifest.json';
+
+const CircleIcon = () => (
+  <Icon
+    component={() => (
+      <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <circle cx="12" cy="12" r="9" />
+      </svg>
+    )}
+  />
+);
 
 const getAppName = (status: AppStatus) => status.name ?? manifest.name;
 
@@ -49,23 +64,60 @@ const LoginRoute = ({ storageWebId }: { storageWebId?: string }) => {
   );
 };
 
+// The show, create and edit pages are displayed next to the list
+const resourceRoutes = (
+  name: string,
+  pages: { list: ReactNode; show: ReactNode; create: ReactNode; edit: ReactNode }
+) => (
+  <Route path={`/${name}`} element={<SplitView list={pages.list} />}>
+    <Route path="show/:id" element={pages.show} />
+    <Route element={<AuthenticatedLayout />}>
+      <Route path="create" element={pages.create} />
+      <Route path="edit/:id" element={pages.edit} />
+    </Route>
+  </Route>
+);
+
 const AppRoutes = ({ status }: { status: AppStatus }) => (
   <Routes>
     <Route path="/configure" element={status.configured ? <Navigate to="/" replace /> : <ConfigurePage />} />
     {status.configured ? (
       <>
-        {/* The events shared with everyone can be seen without being logged in */}
+        {/* The public data can be seen without being logged in */}
         <Route element={<PublicLayout status={status} />}>
-          <Route index element={<NavigateToResource resource="events" />} />
-          <Route path="/events">
-            <Route index element={<EventCalendar storageWebId={status.storageWebId} />} />
-            <Route path="show/:id" element={<EventShow />} />
-            <Route element={<AuthenticatedLayout />}>
-              <Route path="create" element={<EventCreate />} />
-              <Route path="edit/:id" element={<EventEdit />} />
-            </Route>
-          </Route>
-          <Route path="*" element={<ErrorComponent />} />
+          <Route index element={<NavigateToResource resource="circles" />} />
+          {resourceRoutes('circles', {
+            list: <CircleList />,
+            show: <CircleShow />,
+            create: <CircleCreate />,
+            edit: <CircleEdit />
+          })}
+          {resourceRoutes('events', {
+            list: <EventCalendar />,
+            show: <EventShow />,
+            create: <EventCreate />,
+            edit: <EventEdit />
+          })}
+          {resourceRoutes('tasks', {
+            list: <SimpleList />,
+            show: <DescribedShow />,
+            create: <DescribedCreate title="Nouveau projet" />,
+            edit: <DescribedEdit title="Modifier le projet" />
+          })}
+          {resourceRoutes('documents', {
+            list: <SimpleList />,
+            show: <DescribedShow />,
+            create: <DescribedCreate title="Nouveau document" />,
+            edit: <DescribedEdit title="Modifier le document" />
+          })}
+          <Route
+            path="*"
+            element={
+              <div style={{ padding: 24 }}>
+                <ErrorComponent />
+              </div>
+            }
+          />
         </Route>
         <Route path="/login" element={<LoginRoute storageWebId={status.storageWebId} />} />
       </>
@@ -77,6 +129,14 @@ const AppRoutes = ({ status }: { status: AppStatus }) => (
     )}
   </Routes>
 );
+
+const crudRoutes = (name: string) => ({
+  name,
+  list: `/${name}`,
+  show: `/${name}/show/:id`,
+  create: `/${name}/create`,
+  edit: `/${name}/edit/:id`
+});
 
 const App = () => {
   const { status, error } = useAppStatus();
@@ -92,7 +152,7 @@ const App = () => {
 
   return (
     <BrowserRouter>
-      <ConfigProvider theme={RefineThemes.Blue} locale={frFR}>
+      <ConfigProvider theme={{ token: { colorPrimary: PRIMARY_COLOR, colorLink: PRIMARY_COLOR } }} locale={frFR}>
         <AntdApp>
           {error ? (
             <Result status="error" title={error.message} />
@@ -107,13 +167,12 @@ const App = () => {
               routerProvider={routerProvider}
               i18nProvider={i18nProvider}
               resources={[
+                { ...crudRoutes('circles'), meta: { label: 'Cercles', icon: <CircleIcon />, canDelete: true } },
+                { ...crudRoutes('events'), meta: { label: 'Agenda', icon: <CalendarOutlined />, canDelete: true } },
+                { ...crudRoutes('tasks'), meta: { label: 'Projets', icon: <CheckSquareOutlined />, canDelete: true } },
                 {
-                  name: 'events',
-                  list: '/events',
-                  show: '/events/show/:id',
-                  create: '/events/create',
-                  edit: '/events/edit/:id',
-                  meta: { label: 'Calendrier', icon: <CalendarOutlined />, canDelete: true }
+                  ...crudRoutes('documents'),
+                  meta: { label: 'Documents', icon: <FileTextOutlined />, canDelete: true }
                 }
               ]}
               notificationProvider={useNotificationProvider}

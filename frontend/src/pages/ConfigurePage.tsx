@@ -4,6 +4,7 @@ import { resolveAuthAgent, type AuthSession } from '@activitypods/refine-provide
 import { clientId } from 'virtual:app-manifest';
 import { Alert, Avatar, Button, Card, Form, Input, Space, Spin, Steps, Typography } from 'antd';
 import { authProvider, DEFAULT_POD_PROVIDER } from '../providers';
+import { ensureRegistration } from '../registration';
 import manifest from '../../app-manifest.json';
 
 // The data space created on the Pod provider, until the app is registered on it
@@ -27,8 +28,9 @@ const goToGroupSelection = async (session: AuthSession) => {
   // It goes directly to the group creation if the user manages no group
   const url = new URL('/groups/select', await getAuthorizeEndpoint(session));
   url.searchParams.set('redirect', `${window.location.origin}/configure`);
-  url.searchParams.set('id', manifest.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-  url.searchParams.set('name', manifest.name);
+  url.searchParams.set('id', 'mon-organisation');
+  url.searchParams.set('name', 'Mon organisation');
+  url.searchParams.set('type', 'foaf:Organization');
   window.location.href = url.toString();
 };
 
@@ -93,7 +95,8 @@ export const ConfigurePage = () => {
         });
         if (!response.ok) throw new Error((await response.json()).message);
         localStorage.removeItem(PENDING_STORAGE_KEY);
-        window.location.href = '/';
+        // The registration on the personal pod predates the storage, so its grants must be upgraded
+        if (await ensureRegistration()) window.location.href = '/';
       });
     }
   }, [session, searchParams, setSearchParams, pendingStorage, run]);

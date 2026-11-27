@@ -1,11 +1,16 @@
 import type { ReactNode } from 'react';
-import { useGetIdentity, useLogout } from '@refinedev/core';
+import { useGetIdentity, useLogout, useMenu, useResourceParams } from '@refinedev/core';
+import { CreateButton } from '@refinedev/antd';
 import type { Identity } from '@activitypods/refine-providers';
 import { useAccessControlRefresh, useGroupMembership } from '@activitypods/refine-hooks';
-import { JoinGroupButton } from '@activitypods/refine-antd';
-import { App, Avatar, Button, Dropdown, Layout as AntdLayout, Space, Typography } from 'antd';
+import { JoinGroupButton, ShareButton } from '@activitypods/refine-antd';
+import { App, Avatar, Button, Dropdown, Grid, Layout as AntdLayout, Space, Tabs, Typography } from 'antd';
 import { LogoutOutlined, UserDeleteOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router';
+import { clientId } from 'virtual:app-manifest';
+import { TABS_HEIGHT } from './SplitView';
+
+export const PRIMARY_COLOR = '#21b082';
 
 const UserMenu = ({ identity, groupWebId }: { identity?: Identity; groupWebId?: string }) => {
   const { mutate: logout } = useLogout();
@@ -39,9 +44,40 @@ const UserMenu = ({ identity, groupWebId }: { identity?: Identity; groupWebId?: 
       <Avatar
         src={identity?.avatar}
         icon={!identity?.avatar && <UserOutlined />}
-        style={{ cursor: 'pointer', border: '1px solid rgba(0,0,0,0.15)' }}
+        style={{ cursor: 'pointer', border: '2px solid rgba(255,255,255,0.8)' }}
       />
     </Dropdown>
+  );
+};
+
+// One tab per resource, with the buttons acting on the current one
+const TabsMenu = () => {
+  const navigate = useNavigate();
+  const screens = Grid.useBreakpoint();
+  const { menuItems } = useMenu();
+  const { resource } = useResourceParams();
+
+  return (
+    <Tabs
+      activeKey={resource?.name}
+      onChange={key => navigate(menuItems.find(item => item.name === key)!.route!)}
+      tabBarStyle={{ margin: 0, height: TABS_HEIGHT }}
+      items={menuItems.map(item => ({
+        key: item.name,
+        label: screens.sm ? item.label : undefined,
+        icon: item.icon
+      }))}
+      tabBarExtraContent={
+        resource && (
+          <Space>
+            <ShareButton clientId={clientId} resource={resource.name}>
+              {screens.sm && 'Permissions'}
+            </ShareButton>
+            <CreateButton resource={resource.name} hideText={!screens.sm} />
+          </Space>
+        )
+      }
+    />
   );
 };
 
@@ -61,24 +97,24 @@ const Layout = ({
   useAccessControlRefresh();
 
   return (
-    <AntdLayout style={{ minHeight: '100dvh' }}>
+    <AntdLayout style={{ minHeight: '100dvh', background: '#fff' }}>
       <AntdLayout.Header
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 12,
+          height: 48,
           padding: '0 16px',
-          background: '#ebebeb',
-          borderBottom: '1px solid #d9d9d9'
+          backgroundImage: `radial-gradient(circle at 50% 14em, #71C252 0%, ${PRIMARY_COLOR} 100%)`
         }}
       >
         <div
           style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, lineHeight: 1, cursor: 'pointer' }}
           onClick={() => navigate('/')}
         >
-          {appIcon && <Avatar shape="square" src={appIcon} style={{ flexShrink: 0 }} />}
-          <Typography.Text strong ellipsis style={{ fontSize: 20, lineHeight: 1.4 }}>
+          {appIcon && <Avatar shape="square" src={appIcon} style={{ flexShrink: 0, background: '#fff' }} />}
+          <Typography.Text strong ellipsis style={{ fontSize: 20, lineHeight: 1.4, color: '#fff' }}>
             {appName}
           </Typography.Text>
         </div>
@@ -91,9 +127,19 @@ const Layout = ({
           <Button onClick={() => navigate('/login')}>Se connecter</Button>
         )}
       </AntdLayout.Header>
-      <AntdLayout.Content style={{ padding: 24, maxWidth: 1200, width: '100%', margin: '0 auto' }}>
-        {children}
-      </AntdLayout.Content>
+      <div
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          padding: '0 16px',
+          background: '#eeeeee',
+          borderBottom: '1px solid #e0e0e0'
+        }}
+      >
+        <TabsMenu />
+      </div>
+      <AntdLayout.Content>{children}</AntdLayout.Content>
     </AntdLayout>
   );
 };

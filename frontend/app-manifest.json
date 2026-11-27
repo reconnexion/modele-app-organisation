@@ -16,10 +16,26 @@
         "apods:PostOutbox"
       ]
     },
-    "calendar": {
+    "organization": {
       "required": [
         {
+          "shapeTreeUri": "https://shapes.activitypods.org/shapetrees/hc/Circle",
+          "accessMode": ["acl:Read", "acl:Write"]
+        },
+        {
           "shapeTreeUri": "https://shapes.activitypods.org/shapetrees/as/Event",
+          "accessMode": ["acl:Read", "acl:Write"]
+        },
+        {
+          "shapeTreeUri": "https://shapes.activitypods.org/shapetrees/pair/Task",
+          "accessMode": ["acl:Read", "acl:Write"]
+        },
+        {
+          "shapeTreeUri": "https://shapes.activitypods.org/shapetrees/pair/TaskStatus",
+          "accessMode": ["acl:Read", "acl:Write"]
+        },
+        {
+          "shapeTreeUri": "https://shapes.activitypods.org/shapetrees/pair/Document",
           "accessMode": ["acl:Read", "acl:Write"]
         },
         "apods:ReadInbox",
