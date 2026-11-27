@@ -5,7 +5,13 @@ import path from 'node:path';
 import { Errors, type ServiceSchema } from 'moleculer';
 import { signedFetch } from '../signature.ts';
 
-export interface AgentConfig {
+// Name and description of the app, which override those of the manifest
+export interface AppInfo {
+  name?: string;
+  description?: string;
+}
+
+export interface AgentConfig extends AppInfo {
   podProviderUrl: string;
   storageWebId: string;
   storageUri?: string;
@@ -13,12 +19,17 @@ export interface AgentConfig {
 }
 
 // The data space chosen during the configuration, before the app is registered on it
-interface PendingStorage {
+interface PendingStorage extends AppInfo {
   storageWebId: string;
   storageUri: string;
 }
 
 const GROUP_TYPES = ['foaf:Group', 'foaf:Organization', 'Group', 'Organization'];
+
+const getName = (actor: any): string | undefined =>
+  [actor['foaf:name'], actor.name, actor['as:name'], actor.preferredUsername].flat().find(n => typeof n === 'string');
+
+const cleanText = (value: unknown) => (typeof value === 'string' && value.trim()) || undefined;
 
 const hasLink = (linkHeader: string | undefined, uri: string, rel: string) =>
   (linkHeader ?? '').split(/,\s*(?=<)/).some(link => {
@@ -63,8 +74,14 @@ const AgentService: ServiceSchema = {
     status() {
       return {
         configured: !!this.config,
-        storageWebId: this.config?.storageWebId
+        storageWebId: this.config?.storageWebId,
+        name: this.config?.name,
+        description: this.config?.description
       };
+    },
+    getAppInfo(): AppInfo {
+      const { name, description } = this.config ?? this.pending ?? {};
+      return { name, description };
     },
     getPublicKey() {
       return this.publicKey;
@@ -96,7 +113,8 @@ const AgentService: ServiceSchema = {
       const storageUri = this.config ? this.config.storageUri : this.pending?.storageUri;
       return storageUri ? { calendar: storageUri } : {};
     },
-    async prepare(ctx) {
+    // The name defaults to the one of the group
+    async prepare(ctx): Promise<AppInfo> {
       const { storageWebId } = ctx.params;
       if (this.config) throw new Errors.MoleculerClientError('The application is already configured', 403, 'FORBIDDEN');
 
@@ -104,8 +122,16 @@ const AgentService: ServiceSchema = {
       if (!storage['pim:storage'])
         throw new Errors.MoleculerClientError('The group has no storage', 400, 'BAD_REQUEST');
 
-      this.pending = { storageWebId, storageUri: storage['pim:storage'] };
+      const previous: AppInfo = this.pending?.storageWebId === storageWebId ? this.pending : {};
+      this.pending = {
+        storageWebId,
+        storageUri: storage['pim:storage'],
+        name: cleanText(ctx.params.name) ?? previous.name ?? getName(storage),
+        // A null description restores the one of the manifest
+        description: 'description' in ctx.params ? cleanText(ctx.params.description) : previous.description
+      };
       await writeFile(this.pendingPath, JSON.stringify(this.pending, null, 2));
+      return this.actions.getAppInfo();
     },
     async configure(ctx) {
       const { storageWebId } = ctx.params;
@@ -128,6 +154,10 @@ const AgentService: ServiceSchema = {
         podProviderUrl: new URL(storageWebId).origin,
         storageWebId,
         storageUri: storage['pim:storage'],
+        ...(this.pending?.storageWebId === storageWebId && {
+          name: this.pending.name,
+          description: this.pending.description
+        }),
         configuredAt: new Date().toISOString()
       };
       await writeFile(this.configPath, JSON.stringify(this.config, null, 2));

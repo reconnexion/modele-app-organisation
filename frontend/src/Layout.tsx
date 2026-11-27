@@ -7,8 +7,6 @@ import { App, Avatar, Button, Dropdown, Layout as AntdLayout, Space, Typography,
 import { LogoutOutlined, UserDeleteOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router';
 
-export const APP_NAME = 'Calendrier partagé';
-
 const UserMenu = ({ identity, groupWebId }: { identity?: Identity; groupWebId?: string }) => {
   const { mutate: logout } = useLogout();
   const { modal } = App.useApp();
@@ -47,7 +45,7 @@ const UserMenu = ({ identity, groupWebId }: { identity?: Identity; groupWebId?: 
   );
 };
 
-const Layout = ({ children, groupWebId }: { children: ReactNode; groupWebId?: string }) => {
+const Layout = ({ children, groupWebId, appName }: { children: ReactNode; groupWebId?: string; appName: string }) => {
   const { token } = theme.useToken();
   const { data: identity } = useGetIdentity<Identity>();
   const navigate = useNavigate();
@@ -71,7 +69,7 @@ const Layout = ({ children, groupWebId }: { children: ReactNode; groupWebId?: st
           style={{ color: '#fff', fontSize: 20, cursor: 'pointer' }}
           onClick={() => navigate('/')}
         >
-          {APP_NAME}
+          {appName}
         </Typography.Text>
         {identity ? (
           <Space size={12}>

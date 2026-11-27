@@ -2,12 +2,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { resolveAuthAgent, type AuthSession } from '@activitypods/refine-providers';
 import { clientId } from 'virtual:app-manifest';
-import { Alert, Button, Card, Input, Space, Spin, Steps, Typography } from 'antd';
+import { Alert, Button, Card, Form, Input, Space, Spin, Steps, Typography } from 'antd';
 import { authProvider, DEFAULT_POD_PROVIDER } from '../providers';
 import manifest from '../../app-manifest.json';
 
 // The data space created on the Pod provider, until the app is registered on it
 const PENDING_STORAGE_KEY = 'configure.pendingStorage';
+
+const DEFAULT_DESCRIPTION = manifest.description.fr;
+
+interface AppInfo {
+  name?: string;
+  description?: string;
+}
 
 const getAuthorizeEndpoint = async (session: AuthSession): Promise<string> => {
   const { authAgent } = await resolveAuthAgent(session.webId, session.token);
@@ -24,15 +31,19 @@ const goToGroupSelection = async (session: AuthSession) => {
   window.location.href = url.toString();
 };
 
-const goToAuthorization = async (session: AuthSession, storageWebId: string) => {
-  // The access needs of the app target the storage of the group
+// The access needs of the app target the storage of the group
+// Without name, the backend returns the one of the group
+const prepareStorage = async (storageWebId: string, info?: { name: string; description: string | null }) => {
   const response = await fetch('/api/configure/storage', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ storageWebId })
+    body: JSON.stringify({ storageWebId, ...info })
   });
   if (!response.ok) throw new Error((await response.json()).message);
+  return (await response.json()) as AppInfo;
+};
 
+const goToAuthorization = async (session: AuthSession, storageWebId: string) => {
   const url = new URL(await getAuthorizeEndpoint(session));
   url.searchParams.set('client_id', clientId);
   url.searchParams.set('podOwner', storageWebId);
@@ -40,12 +51,13 @@ const goToAuthorization = async (session: AuthSession, storageWebId: string) => 
 };
 
 export const ConfigurePage = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [podProviderUrl, setPodProviderUrl] = useState(DEFAULT_POD_PROVIDER);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string>();
   const session = authProvider.getSession();
-  const pendingStorage = localStorage.getItem(PENDING_STORAGE_KEY);
+  const [pendingStorage, setPendingStorage] = useState(() => localStorage.getItem(PENDING_STORAGE_KEY));
+  const [appInfo, setAppInfo] = useState<AppInfo>();
   const handled = useRef(false);
 
   const run = useCallback(async (action: () => Promise<unknown>) => {
@@ -65,9 +77,10 @@ export const ConfigurePage = () => {
 
     if (group) {
       // Back from the group selection or creation page
-      handled.current = true;
       localStorage.setItem(PENDING_STORAGE_KEY, group);
-      run(() => goToAuthorization(session, group));
+      setPendingStorage(group);
+      setAppInfo(undefined);
+      setSearchParams({}, { replace: true });
     } else if (searchParams.has('registered') && pendingStorage) {
       // Back from the authorization page
       handled.current = true;
@@ -82,7 +95,25 @@ export const ConfigurePage = () => {
         window.location.href = '/';
       });
     }
-  }, [session, searchParams, pendingStorage, run]);
+  }, [session, searchParams, setSearchParams, pendingStorage, run]);
+
+  useEffect(() => {
+    if (!session || !pendingStorage || appInfo || searchParams.has('group') || searchParams.has('registered')) return;
+    prepareStorage(pendingStorage)
+      .then(setAppInfo)
+      .catch(e => setError(e.message));
+  }, [session, pendingStorage, appInfo, searchParams]);
+
+  const authorize = (values: { name: string; description: string }) =>
+    run(async () => {
+      const description = values.description?.trim();
+      await prepareStorage(pendingStorage!, {
+        name: values.name,
+        // The manifest has translations of the default description
+        description: description && description !== DEFAULT_DESCRIPTION ? description : null
+      });
+      await goToAuthorization(session!, pendingStorage!);
+    });
 
   const startOver = () => {
     localStorage.removeItem(PENDING_STORAGE_KEY);
@@ -155,19 +186,35 @@ export const ConfigurePage = () => {
               </Button>
             </Space>
           </Space>
+        ) : !appInfo ? (
+          !error && (
+            <div style={{ textAlign: 'center' }}>
+              <Spin />
+            </div>
+          )
         ) : (
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Form
+            layout="vertical"
+            initialValues={{ name: appInfo.name, description: appInfo.description ?? DEFAULT_DESCRIPTION }}
+            onFinish={authorize}
+          >
             <Typography.Paragraph>
-              Autorisez l'application à accéder au porte-données{' '}
+              Donnez un nom à l'application, puis autorisez-la à accéder au porte-données{' '}
               <Typography.Text code>{pendingStorage}</Typography.Text>.
             </Typography.Paragraph>
+            <Form.Item name="name" label="Nom" rules={[{ required: true, whitespace: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="description" label="Description">
+              <Input.TextArea autoSize={{ minRows: 2 }} />
+            </Form.Item>
             <Space>
-              <Button type="primary" onClick={() => run(() => goToAuthorization(session!, pendingStorage!))}>
+              <Button type="primary" htmlType="submit">
                 Autoriser l'application
               </Button>
               <Button onClick={startOver}>Recommencer</Button>
             </Space>
-          </Space>
+          </Form>
         )}
       </Card>
     </div>

@@ -12,7 +12,7 @@ import '@ant-design/v5-patch-for-react-19';
 import '@refinedev/antd/dist/reset.css';
 
 import { authProvider, createProviders, DEFAULT_POD_PROVIDER } from './providers';
-import Layout, { APP_NAME } from './Layout';
+import Layout from './Layout';
 import { i18nProvider } from './i18n';
 import useAppStatus, { AppStatus } from './useAppStatus';
 import { ConfigurePage } from './pages/ConfigurePage';
@@ -22,9 +22,12 @@ import EventCalendar from './resources/events/EventCalendar';
 import EventCreate from './resources/events/EventCreate';
 import EventEdit from './resources/events/EventEdit';
 import EventShow from './resources/events/EventShow';
+import manifest from '../app-manifest.json';
 
-const PublicLayout = ({ storageWebId }: { storageWebId?: string }) => (
-  <Layout groupWebId={storageWebId}>
+const getAppName = (status: AppStatus) => status.name ?? manifest.name;
+
+const PublicLayout = ({ status }: { status: AppStatus }) => (
+  <Layout groupWebId={status.storageWebId} appName={getAppName(status)}>
     <Outlet />
   </Layout>
 );
@@ -52,7 +55,7 @@ const AppRoutes = ({ status }: { status: AppStatus }) => (
     {status.configured ? (
       <>
         {/* The events shared with everyone can be seen without being logged in */}
-        <Route element={<PublicLayout storageWebId={status.storageWebId} />}>
+        <Route element={<PublicLayout status={status} />}>
           <Route index element={<NavigateToResource resource="events" />} />
           <Route path="/events">
             <Route index element={<EventCalendar storageWebId={status.storageWebId} />} />
@@ -113,7 +116,7 @@ const App = () => {
               }}
             >
               <AppRoutes status={status} />
-              <DocumentTitleHandler handler={() => APP_NAME} />
+              <DocumentTitleHandler handler={() => getAppName(status)} />
             </Refine>
           )}
         </AntdApp>

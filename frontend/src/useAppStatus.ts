@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 export interface AppStatus {
   configured: boolean;
   storageWebId?: string;
+  name?: string;
+  description?: string;
 }
 
 const useAppStatus = () => {
